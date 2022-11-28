@@ -5,7 +5,13 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
+
+import com.mysql.cj.jdbc.CallableStatement;
+import com.mysql.cj.jdbc.result.ResultSetMetaData;
+
 
 public class Consumer {
 	public  static void consumer() throws ClassNotFoundException, SQLException, InvalidTypeException, IdNotFoundException {
@@ -42,19 +48,6 @@ public class Consumer {
 			System.out.println("Do you want to continue(Y/N)");
 			c=sc.next();
 		}while(c.equals("Y"));		
-	}
-	private static void generateBill() throws SQLException, ClassNotFoundException {
-		Connection con=MyConnection.myConnection();
-		Scanner sc = new Scanner(System.in);		
-		System.out.println("Please Enter Electricity Bill ID :");
-		int eid=sc.nextInt();
-		Statement st=con.createStatement();
-		ResultSet rs = st.executeQuery("select * from ElectricityBill where eBillId = "+eid+"");
-		while(rs.next()) {
-			System.out.println(rs.getString(1)+"|"+rs.getString(2)+"|"+rs.getString(3)+"|"+rs.getString(4)+"|"+rs.getString(5)+"|"+rs.getString(6));
-		}
-		
-		
 	}
 	public static void existingConsumer() throws ClassNotFoundException, SQLException, IdNotFoundException {
 		Connection con=MyConnection.myConnection();
@@ -109,6 +102,8 @@ public class Consumer {
 		try {				
 		System.out.println("Enter Consumer Id :");
 		cid=sc.nextInt();
+
+
 		System.out.println("Enter Consumer Name :");
 		cname =sc.next();
 		System.out.println("Enter City :");
@@ -117,6 +112,7 @@ public class Consumer {
 		area =sc.next();
 		System.out.println("Enter Type(Domestic/Commercial) :");
 		type =sc.next();
+		
 	} catch (Exception e) {
 		System.out.println("Invalid Input ! "+e);
 		flag=1;
@@ -138,4 +134,63 @@ public class Consumer {
 		return false;
 			
 	}
+	private static void generateBill() throws SQLException, ClassNotFoundException {
+		Connection con=MyConnection.myConnection();
+		Scanner sc = new Scanner(System.in);		
+		System.out.println("Please Enter Electricity Bill ID :");
+		int eid=sc.nextInt();
+		Statement st=con.createStatement();
+		ResultSet rs = st.executeQuery("select * from ElectricityBill where eBillId = "+eid+"");
+		List <DisplayConsumerData> list=new ArrayList<>();
+		list = convertResultSetToList(rs);
+		System.out.println("E-Bill ID | Consumer ID | Year | Month | Units Consumed | Total Amount");
+		for(DisplayConsumerData i:list)
+		{
+			System.out.println(list);
+		}
+	}
+	public static List<DisplayConsumerData> convertResultSetToList(ResultSet rs) throws SQLException {
+	    ResultSetMetaData md = (ResultSetMetaData) rs.getMetaData();
+	    int columns = md.getColumnCount();
+	    List<DisplayConsumerData> list = new ArrayList<>();
+
+	    while (rs.next()) {
+	        	int custId=rs.getInt(1);
+	        	String custName=rs.getString(2);
+	        	String city=rs.getString(3);
+	        	String area=rs.getString(4);
+	        	String type=rs.getString(5);
+	        	list.add(new DisplayConsumerData(custId,custName,city,area,type));
+	       
+	    }
+	    return list;
+	}
+	public static void viewBillWithCityAndArea() throws ClassNotFoundException, SQLException {
+		Connection con=MyConnection.myConnection();
+		CallableStatement callable = (CallableStatement) con.prepareCall("{call specific_city_and_area(?,?,?,?,?,?)} ");
+		
+		Scanner sc = new Scanner(System.in);
+		System.out.println("Enter city:");
+		String city = sc.nextLine();
+		System.out.println("Enter area:");
+		String area = sc.nextLine();
+		int month = sc.nextInt();
+		callable.setString(1, city );
+		callable.setString(2, area);
+		
+		callable.registerOutParameter(3, java.sql.Types.INTEGER);
+		callable.registerOutParameter(4, java.sql.Types.INTEGER);
+		callable.registerOutParameter(5, java.sql.Types.INTEGER);
+		callable.registerOutParameter(6, java.sql.Types.DOUBLE);
+		callable.executeUpdate();
+		int billId = callable.getInt(3);
+		int consumerId = callable.getInt(4);
+		int unitsConsumed = callable.getInt(5);
+		double totalAmount = callable.getDouble(6);
+		
+		
+		System.out.println("E-Bill ID: "+billId+"|"+"Consumer ID: "+consumerId+"|"+"Units Consumed:"+unitsConsumed+"|"+"Total Amount: "+totalAmount);
+		
+	}
+
 }
