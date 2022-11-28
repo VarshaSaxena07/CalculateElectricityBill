@@ -1,6 +1,7 @@
 package Team4Project;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -35,13 +36,20 @@ public class Admin {
 					Bill.viewBillWithYearAndMonth();
 					break;
 				}
-			}			
+			}
+			else {
+				System.out.println("Invalid Credentials");
+			}
 	}
 	private static boolean validate(String username, String password) throws ClassNotFoundException, SQLException {
 		Connection con=MyConnection.myConnection();
-		String sqlSelect="select * from admin where uname= username and pass=password";
+		String sqlSelect="select * from admin where adminname= ? and password= ? ";
+		PreparedStatement pst = con.prepareStatement(sqlSelect);
+		pst.setString(1,username);
+		pst.setString(2,password);
+		pst.execute();
 		Statement st=con.createStatement();
-		ResultSet rs = st.executeQuery(sqlSelect);
+		ResultSet rs = pst.executeQuery();
 		if(rs!=null)
 			return true;
 		else

@@ -15,18 +15,25 @@ public class Consumer {
 			System.out.println("-----Hello welcome to the electricity bill calculator..----");
 			System.out.println("1.New Consumer");
 			System.out.println("2.Existing Consumer");
-			System.out.println("3.Exit");
+			System.out.println("3.Generate Your Bill");
+			System.out.println("4.Exit");
 			System.out.println("Enter your choice");
 			int ch = sc.nextInt();
 			switch(ch)
 			{
 			case 1:
-			   newConsumer();
+				boolean bool = newConsumer();
+			   if(bool)
+				   System.out.println("You are Successfully Registered...");
 			    break;
 			case 2:
-				existingConsumer();					
+				existingConsumer();	
+				 System.out.println("Your bill is ready to generate...");
 				break;
 			case 3:
+				generateBill();
+				break;
+			case 4:
 				break;
 			default:
 				System.out.println("Wrong Choice");		
@@ -34,7 +41,20 @@ public class Consumer {
 		
 			System.out.println("Do you want to continue(Y/N)");
 			c=sc.next();
-		}while(c.equals('Y'));		
+		}while(c.equals("Y"));		
+	}
+	private static void generateBill() throws SQLException, ClassNotFoundException {
+		Connection con=MyConnection.myConnection();
+		Scanner sc = new Scanner(System.in);		
+		System.out.println("Please Enter Electricity Bill ID :");
+		int eid=sc.nextInt();
+		Statement st=con.createStatement();
+		ResultSet rs = st.executeQuery("select * from ElectricityBill where eBillId = "+eid+"");
+		while(rs.next()) {
+			System.out.println(rs.getString(1)+"|"+rs.getString(2)+"|"+rs.getString(3)+"|"+rs.getString(4)+"|"+rs.getString(5)+"|"+rs.getString(6));
+		}
+		
+		
 	}
 	public static void existingConsumer() throws ClassNotFoundException, SQLException, IdNotFoundException {
 		Connection con=MyConnection.myConnection();
@@ -42,10 +62,14 @@ public class Consumer {
 		Scanner sc = new Scanner(System.in);
 		System.out.println("Enter Your Consumer ID:");
 		int cid=sc.nextInt();
-		String sqlSelect="select * from user where id= cid";
+		String sqlSelect="select * from consumer where consumerId= ? ";
+		PreparedStatement pst1 = con.prepareStatement(sqlSelect);
+		pst1.setInt(1, cid);
 		if(sqlSelect.equals(null))
 			throw new IdNotFoundException();
 		else {
+			System.out.println("Please Enter Electricity Bill ID");
+			int eid=sc.nextInt();
 			System.out.println("Please Enter Electricity Units:");
 			int units=sc.nextInt();
 			System.out.println("Please Enter Year:");
@@ -53,19 +77,23 @@ public class Consumer {
 			System.out.println("Please Enter Month:");
 			int month=sc.nextInt();
 			Statement st=con.createStatement();
-			ResultSet rs = st.executeQuery(sqlSelect);
-			String type= rs.getString(5);
+			ResultSet rs = st.executeQuery("select * from consumer where consumerId= "+cid+"");
+			String type="";
+			while(rs.next()) {
+				type= rs.getString(5);
+			}
 			if(type.equals("C"))
 				totalAmt=units*4;
 			if(type.equals("D"))
 				totalAmt=units*2;
-			String sqlInsert = "insert into electricityBill values(?,?,?,?,?)";
+			String sqlInsert = "insert into electricityBill values(?,?,?,?,?,?)";
 			PreparedStatement pst = con.prepareStatement(sqlInsert);
-			pst.setInt(1, cid);
-			pst.setInt(2, year);
-			pst.setInt(3, month);
-			pst.setDouble(4, units);
-			pst.setDouble(5, totalAmt);
+			pst.setInt(1,eid );
+			pst.setInt(2, cid);
+			pst.setInt(3, year);
+			pst.setInt(4, month);
+			pst.setDouble(5, units);
+			pst.setDouble(6, totalAmt);
 			pst.execute();
 			
 		}			
@@ -89,8 +117,6 @@ public class Consumer {
 		area =sc.next();
 		System.out.println("Enter Type(Domestic/Commercial) :");
 		type =sc.next();
-		if(!type.equals("Domestic")||!type.equals("Commercial"))
-			throw new InvalidTypeException();
 	} catch (Exception e) {
 		System.out.println("Invalid Input ! "+e);
 		flag=1;
@@ -101,7 +127,10 @@ public class Consumer {
 		pst.setString(2, cname);
 		pst.setString(3, city);
 		pst.setString(4, area);
-		pst.setString(5, type);
+		if(type.equals("Domestic"))
+			pst.setString(5, "D");
+		if(type.equals("Commercial"))
+			pst.setString(5, "C");
 		pst.execute();
 		return true;
 		}

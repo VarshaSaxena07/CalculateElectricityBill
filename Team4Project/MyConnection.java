@@ -6,9 +6,8 @@ import java.sql.SQLException;
 public class MyConnection {
 	static Connection myConnection() throws ClassNotFoundException, SQLException {
 	Class.forName("com.mysql.cj.jdbc.Driver");
-	String url="jdbc:mysql://localhost:3306/WileyDb";
+	String url="jdbc:mysql://localhost:3306/team4";
 	Connection con = DriverManager.getConnection(url,"root","root");
 	return con;
 	}
-
 }
